@@ -23,8 +23,9 @@ class Settings(BaseSettings):
     ALGORITHM: str = os.getenv('ALGORITHM')
 
     # s3
-    ACCESS_KEY: str = os.getenv('ACCESS_KEY')
-    SECRET_ACCESS_KEY: str = os.getenv('SECRET_ACCESS_KEY')
+    AWS_ACCESS_KEY_ID: str = os.getenv('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY: str = os.getenv('AWS_SECRET_ACCESS_KEY')
+    S3_REGION_NAME: str = os.getenv('S3_REGION_NAME')
     S3_BUCKET_NAME: str = os.getenv('S3_BUCKET_NAME')
 
 
