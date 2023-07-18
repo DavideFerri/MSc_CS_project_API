@@ -49,11 +49,9 @@ def create_app() -> FastAPI:
     @app.get("/users/me/documents", response_model=list[str])
     async def get_docs_list(settings: Settings = Depends(get_settings),
                             current_user: UserModel = Depends(get_current_active_user)):
-        # Let's use Amazon S3
-        s3 = boto3.resource("s3")
-
-        # Print out bucket names
-        for bucket in s3.buckets.all():
-            print(bucket.name)
+        s3 = boto3.resource(service_name="s3")
+        bucket = s3.Bucket(settings.S3_BUCKET_NAME)
+        document_ids = [obj.key for obj in bucket.objects.all()]
+        return document_ids
 
     return app
