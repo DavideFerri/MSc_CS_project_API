@@ -1,0 +1,1 @@
+env = 'DEV'  # 'DEV', 'PROD', 'PRE-PROD'
