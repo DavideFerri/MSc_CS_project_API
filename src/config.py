@@ -8,7 +8,7 @@ load_dotenv()
 
 
 class Settings(BaseSettings):
-    # src
+    # integrations
     # BASE_DIR: str = pathlib.Path(__file__).parent.parent
 
     # db
@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     AWS_SECRET_ACCESS_KEY: str = os.getenv('AWS_SECRET_ACCESS_KEY')
     S3_REGION_NAME: str = os.getenv('S3_REGION_NAME')
     S3_BUCKET_NAME: str = os.getenv('S3_BUCKET_NAME')
+    S3_ENDPOINT_URL: str = os.getenv('S3_ENDPOINT_URL')
 
 
 

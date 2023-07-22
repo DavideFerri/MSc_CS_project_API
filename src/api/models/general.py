@@ -34,6 +34,8 @@ class PyObjectId(ObjectId):
         field_schema.update(type="string")
 
 
-class IlliquidValueModel(BaseModel):
-    metric_type: Literal['reported', 'estimated']
-    value: float
+# Custom Response model for binary data
+class BinaryResponseModel:
+    def __init__(self, content: bytes, media_type: str):
+        self.content = content
+        self.media_type = media_type

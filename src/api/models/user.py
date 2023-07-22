@@ -9,6 +9,7 @@ class UserModel(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
     username: str
     disabled: Union[bool, None] = None
+    is_admin: bool = False
 
     class Config:
         allow_population_by_field_name = True
@@ -18,6 +19,7 @@ class UserModel(BaseModel):
             "example": {
                 "username": "andrea",
                 "email": "andrea@tamarix.com",
+                "is_admin": False,
             }
         }
 

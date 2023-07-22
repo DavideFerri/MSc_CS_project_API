@@ -1,8 +1,15 @@
+import io
+import os
 from datetime import timedelta
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File
+from fastapi.openapi.models import Response
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.encoders import jsonable_encoder
+from starlette.responses import StreamingResponse
+
 from src.api.auth import authenticate_user, create_access_token, get_current_active_user
+from src.api.models.general import BinaryResponseModel
+from src.api.s3 import S3Connector
 from src.config import Settings
 from src.database import get_dbs
 from src.api.models.user import UserModel, TokenModel
@@ -23,6 +30,9 @@ def create_app() -> FastAPI:
 
     # initialize db
     db = get_dbs()
+
+    # initialize S3Connector
+    s3connector = S3Connector()
 
     # welcome page
     @app.get("/")
@@ -49,34 +59,34 @@ def create_app() -> FastAPI:
     @app.get("/users/me/documents", response_model=list[str])
     async def get_docs_list(settings: Settings = Depends(get_settings),
                             current_user: UserModel = Depends(get_current_active_user)):
-        s3 = boto3.resource(service_name="s3",
-                            aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                            aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-                            region_name=settings.S3_REGION_NAME)
-        bucket = s3.Bucket(settings.S3_BUCKET_NAME)
-        document_ids = [obj.key for obj in bucket.objects.all()]
-        return document_ids
+        return s3connector.get_object_ids()
 
-    @app.post("/users/me/documents/{document_name}")
-    async def download_doc(document_name: str,
-                           folder_path: str = 'K-10_docs',
-                           settings: Settings = Depends(get_settings),
-                           current_user: UserModel = Depends(get_current_active_user)):
+    @app.get("/users/me/documents/{document_name}", response_model=bytes)
+    async def get_doc(document_name: str,
+                      folder_path: str = 'K-10_docs',
+                      settings: Settings = Depends(get_settings),
+                      current_user: UserModel = Depends(get_current_active_user)):
         document_id = f"{folder_path}/{document_name}"
-        s3_resource = boto3.resource(service_name="s3",
-                                     aws_access_key_id=settings.AWS_ACCESS_KEY_ID,
-                                     aws_secret_access_key=settings.AWS_SECRET_ACCESS_KEY,
-                                     region_name=settings.S3_REGION_NAME)
+        file_content = s3connector.get_object(document_id)
 
-        s3_object = s3_resource.Object(
-            bucket_name=settings.S3_BUCKET_NAME,
-            key=document_id
-        )
+        # Use StreamingResponse to directly stream the file content as a raw response
+        return StreamingResponse(io.BytesIO(file_content), media_type='application/octet-stream',
+                                 headers={"Content-Disposition": f"attachment; filename={document_name}"})
 
-        with open(f'./{document_name}', 'wb') as file:
-            s3_object.download_fileobj(
-                Fileobj=file
+    @app.post("/users/me/documents")
+    async def upload_doc(file: UploadFile = File(...),
+                         folder_path: str = 'K-10_docs',
+                         settings: Settings = Depends(get_settings),
+                         current_user: UserModel = Depends(get_current_active_user)):
+        # check if user is allowed to upload documents
+        if not current_user.is_admin:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="You are not allowed to upload documents",
+                headers={"WWW-Authenticate": "Bearer"},
             )
-        return None
+        document_id = f"{folder_path}/{file.filename}"
+        s3connector.add_doc(file, document_id)
+        return {"message": f"Document {file.filename} successfully uploaded to S3!"}
 
     return app
