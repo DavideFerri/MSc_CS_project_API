@@ -4,6 +4,8 @@ from dotenv import load_dotenv
 from pydantic import BaseSettings
 
 # load environment variables from .env.
+from utilities import go_n_levels_up
+
 load_dotenv()
 
 
@@ -28,6 +30,13 @@ class Settings(BaseSettings):
     S3_REGION_NAME: str = os.getenv('S3_REGION_NAME')
     S3_BUCKET_NAME: str = os.getenv('S3_BUCKET_NAME')
     S3_ENDPOINT_URL: str = os.getenv('S3_ENDPOINT_URL')
+    S3_BUCKET_FOLDER: str = os.getenv('S3_BUCKET_FOLDER')
+
+    # llm
+    LLM_PATH: str = os.getenv('LLM_PATH')
+
+    # index path
+    INDEX_PATH: str = os.path.join(go_n_levels_up(os.path.abspath(__file__), 2), 'data', 'embeddings')
 
 
 

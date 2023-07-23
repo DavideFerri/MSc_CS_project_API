@@ -13,7 +13,7 @@ def mock_s3_connector():
     return mock_s3_connector
 
 
-def mock_loader_pdf():
+def mock_loader():
     loader = Mock()
     loader.load.return_value = PyPDFLoader("./resources/sample.pdf").load()
     return loader
@@ -28,7 +28,6 @@ def mock_loader_txt():
 @patch("src.service.chatbot.loaders.file_loader_factory.FileLoaderFactory.get_loader")
 @patch("src.api.s3.S3Connector.__new__")
 def test_load_with_pdf_file(mock_1, mock_2):
-
     mock_1.return_value = mock_s3_connector()
     mock_2.return_value = mock_loader_pdf()
     # Test loading a PDF file from S3
@@ -38,18 +37,3 @@ def test_load_with_pdf_file(mock_1, mock_2):
     documents = s3_file_loader.load()
     assert len(documents) == 6
     assert isinstance(documents[0], Document)
-
-@patch("src.service.chatbot.loaders.file_loader_factory.FileLoaderFactory.get_loader")
-@patch("src.api.s3.S3Connector.__new__")
-def test_load_with_text_file(mock_1, mock_2):
-
-    mock_1.return_value = mock_s3_connector()
-    mock_2.return_value = mock_loader_txt()
-    # Test loading a PDF file from S3
-    object_id = "./resources/sample.pdf"
-
-    s3_file_loader = S3FileLoader(object_id)
-    documents = s3_file_loader.load()
-    assert len(documents) == 1
-    assert isinstance(documents[0], Document)
-

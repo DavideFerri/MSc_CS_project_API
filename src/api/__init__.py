@@ -1,6 +1,8 @@
 import io
 import os
 from datetime import timedelta
+from typing import Any
+
 from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File
 from fastapi.openapi.models import Response
 from fastapi.security import OAuth2PasswordRequestForm
@@ -16,11 +18,22 @@ from src.api.models.user import UserModel, TokenModel
 from functools import lru_cache
 import boto3
 
-
 # load settings - see https://fastapi.tiangolo.com/advanced/settings/
+from src.service.chatbot.chatbot import Chatbot
+from src.service.chatbot.chatbots.base_chatbot import BaseChatbot
+
+
 @lru_cache
 def get_settings():
     return Settings()
+
+
+@lru_cache()
+def get_chatbot():
+    settings = get_settings()
+    chatbot = BaseChatbot()
+    chatbot.load_vector_store(persist_directory=settings.INDEX_PATH, docs_path=settings.S3_BUCKET_FOLDER)
+    return chatbot
 
 
 # create app
@@ -63,9 +76,9 @@ def create_app() -> FastAPI:
 
     @app.get("/users/me/documents/{document_name}", response_model=bytes)
     async def get_doc(document_name: str,
-                      folder_path: str = 'K-10_docs',
                       settings: Settings = Depends(get_settings),
                       current_user: UserModel = Depends(get_current_active_user)):
+        folder_path = settings.S3_BUCKET_FOLDER
         document_id = f"{folder_path}/{document_name}"
         file_content = s3connector.get_object(document_id)
 
@@ -75,10 +88,10 @@ def create_app() -> FastAPI:
 
     @app.post("/users/me/documents")
     async def upload_doc(file: UploadFile = File(...),
-                         folder_path: str = 'K-10_docs',
                          settings: Settings = Depends(get_settings),
                          current_user: UserModel = Depends(get_current_active_user)):
         # check if user is allowed to upload documents
+        folder_path = settings.S3_BUCKET_FOLDER
         if not current_user.is_admin:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -89,11 +102,10 @@ def create_app() -> FastAPI:
         s3connector.add_doc(file, document_id)
         return {"message": f"Document {file.filename} successfully uploaded to S3!"}
 
-    return app
-
-    @app.post("/users/me/chatbot")
+    @app.post("/users/me/chatbot", response_model=dict[str, Any])
     async def chatbot(message: str,
-                        settings: Settings = Depends(get_settings),
-                        current_user: UserModel = Depends(get_current_active_user)):
-        # initialize chatbot instance
-        chatbot = Chatbot()
+                      chatbot: Chatbot = Depends(get_chatbot),
+                      current_user: UserModel = Depends(get_current_active_user)):
+        return chatbot.chat(query=message)
+
+    return app

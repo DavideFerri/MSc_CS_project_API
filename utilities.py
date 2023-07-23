@@ -255,3 +255,21 @@ def round_to_power_of_10(number: float):
 def get_file_extension(file_path) -> str:
     _, file_extension = os.path.splitext(file_path)
     return file_extension.lower()
+
+def go_n_levels_up(path, levels_up):
+    """
+    Navigate n levels up in the folder hierarchy from a given path (please note that one level up means that you have the path of the directory where path is).
+
+    :param path: The starting path.
+    :param levels_up: The number of levels to go up.
+    :return: The final path after going up n levels.
+    """
+    if levels_up < 0:
+        raise ValueError("levels_up must be a non-negative integer.")
+
+    current_path = os.path.abspath(path)
+
+    for _ in range(levels_up):
+        current_path = os.path.dirname(current_path)
+
+    return current_path

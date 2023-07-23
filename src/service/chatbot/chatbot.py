@@ -1,5 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
+from typing import Any
+
 from langchain.document_loaders.base import BaseLoader
 from langchain.vectorstores import VectorStore
 
@@ -9,11 +11,11 @@ class Chatbot:
     vector_store: VectorStore = None
 
     @abstractmethod
-    def load_vector_store(self, index_path: str = None, docs_path: str = None) -> None:
+    def load_vector_store(self, persist_directory: str, docs_path: str = None) -> None:
         pass
 
     @abstractmethod
-    def chat(self):
+    def chat(self, query: str, **kwargs) -> dict[str, Any]:
         pass
 
 
