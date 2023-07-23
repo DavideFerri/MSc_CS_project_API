@@ -90,3 +90,10 @@ def create_app() -> FastAPI:
         return {"message": f"Document {file.filename} successfully uploaded to S3!"}
 
     return app
+
+    @app.post("/users/me/chatbot")
+    async def chatbot(message: str,
+                        settings: Settings = Depends(get_settings),
+                        current_user: UserModel = Depends(get_current_active_user)):
+        # initialize chatbot instance
+        chatbot = Chatbot()

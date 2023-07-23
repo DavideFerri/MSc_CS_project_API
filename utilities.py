@@ -1,4 +1,7 @@
 from __future__ import annotations
+
+import os
+
 import numpy as np
 import datetime
 from dateutil.relativedelta import relativedelta
@@ -247,3 +250,8 @@ def round_to_power_of_10(number: float):
     power = round(math.log10(number))
     rounded = 10 ** power
     return rounded
+
+
+def get_file_extension(file_path) -> str:
+    _, file_extension = os.path.splitext(file_path)
+    return file_extension.lower()

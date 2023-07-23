@@ -32,13 +32,8 @@ class S3Connector:
             cls._instance.bucket = res.Bucket(S3Connector.aws_bucket_name)
         return cls._instance
 
-    def get_object_ids(self, ownername: str = None, date: datetime.date = None, extensions: list[str] = ['.pdf']) -> List[str]:
-        prefix = ""
-        if ownername:
-            prefix += f"{ownername}/"
-            if date:
-                prefix += f"{date.strftime('%Y-%m-%d')}/"
-
+    def get_object_ids(self, prefix: str = None, extensions: list[str] = ['.pdf']) -> List[str]:
+        prefix = prefix if prefix else ""
         file_names = []
         for obj in self.bucket.objects.filter(Prefix=prefix):
             file_key = obj.key
@@ -49,7 +44,6 @@ class S3Connector:
                         break
             else:
                 file_names.append(file_key)
-
         return file_names
 
     def get_object(self, object_id: str) -> bytes | None:
@@ -58,6 +52,15 @@ class S3Connector:
             response = s3_object.get()
             file_content = response['Body'].read()
             return file_content
+        except Exception as e:
+            # Handle exceptions accordingly (e.g., file not found, permissions issue, etc.)
+            print(f"Error while retrieving file: {e}")
+            return None
+
+    def download_object(self, object_id: str, file_path: str) -> None:
+        try:
+            s3_object = self.bucket.Object(object_id)
+            s3_object.download_file(file_path)
         except Exception as e:
             # Handle exceptions accordingly (e.g., file not found, permissions issue, etc.)
             print(f"Error while retrieving file: {e}")
