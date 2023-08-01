@@ -1,15 +1,6 @@
 from __future__ import annotations
 from pydantic import BaseModel, Field, EmailStr, validator, root_validator
 from bson import ObjectId
-from typing import Optional, Union, List, Dict, Literal, Any
-from utilities import datestring_to_datetime
-import itertools
-import datetime
-import numpy as np
-from utilities import datetime_to_datestring, datestring_to_datetime
-from utilities import generate_list_of_supported_dates_in_year
-from copy import deepcopy
-import itertools
 
 
 # todo: ensure that validator names are unique

@@ -22,14 +22,17 @@ class BaseChatbot(Chatbot, ABC):
 
     llm: LLM
     vector_store: VectorStore | None
+    chat_history: list[tuple[str, str]]
 
     def __init__(self, vector_store: VectorStore = None, llm: LLM = GPT4All(model=settings.LLM_PATH)):
         self.vector_store = vector_store
+        self.llm = llm
+        self.chat_history = []
 
-    def load_vector_store(self, persist_directory: str, docs_path: str = None) -> None:
+    def load_vector_store(self, persist_directory: str, docs_path: str = None, replace: bool = False) -> None:
 
         embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
-        if os.listdir(persist_directory):
+        if os.listdir(persist_directory) and not replace:
             # load index
             db = Chroma(persist_directory=persist_directory, embedding_function=embeddings)
         else:
@@ -47,7 +50,8 @@ class BaseChatbot(Chatbot, ABC):
         retriever = self.vector_store.as_retriever()
         qa = ConversationalRetrievalChain.from_llm(llm=llm, retriever=retriever,
                                                    return_source_documents=True)
-        result = qa({"question": query})
+        result = qa({"question": query, "chat_history": self.chat_history})
+        self.chat_history.append((query, result["answer"]))
         return result
 
 

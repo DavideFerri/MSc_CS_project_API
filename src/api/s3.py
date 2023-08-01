@@ -57,6 +57,17 @@ class S3Connector:
             print(f"Error while retrieving file: {e}")
             return None
 
+    def delete_object(self, object_id: str) -> bool:
+        try:
+            s3_object = self.bucket.Object(object_id)
+            s3_object.delete()
+            return True
+        except Exception as e:
+            # Handle exceptions accordingly (e.g., file not found, permissions issue, etc.)
+            print(f"Error while deleting file: {e}")
+            return False
+
+
     def download_object(self, object_id: str, file_path: str) -> None:
         try:
             s3_object = self.bucket.Object(object_id)

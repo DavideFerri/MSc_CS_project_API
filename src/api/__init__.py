@@ -1,8 +1,10 @@
+import asyncio
 import io
 import os
 from datetime import timedelta
 from typing import Any
 
+from celery.result import AsyncResult
 from fastapi import Depends, FastAPI, HTTPException, status, UploadFile, File
 from fastapi.openapi.models import Response
 from fastapi.security import OAuth2PasswordRequestForm
@@ -15,9 +17,10 @@ from src.api.s3 import S3Connector
 from src.config import Settings
 from src.database import get_dbs
 from src.api.models.user import UserModel, TokenModel
+from src.api.tasks import add_doc_update_index
 from functools import lru_cache
 import boto3
-
+from celery import Celery
 # load settings - see https://fastapi.tiangolo.com/advanced/settings/
 from src.service.chatbot.chatbot import Chatbot
 from src.service.chatbot.chatbots.base_chatbot import BaseChatbot
@@ -98,9 +101,27 @@ def create_app() -> FastAPI:
                 detail="You are not allowed to upload documents",
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        document_id = f"{folder_path}/{file.filename}"
-        s3connector.add_doc(file, document_id)
-        return {"message": f"Document {file.filename} successfully uploaded to S3!"}
+        file_info = {
+            "file_name": file.filename,
+            "file_content": file.content_type,
+        }
+        # schedule task to upload document to S3 and add to vector store
+        task = add_doc_update_index.delay(file_info=file_info, document_id=f"{folder_path}/{file.filename}",
+                                          persist_directory=settings.INDEX_PATH,
+                                          docs_path=settings.S3_BUCKET_FOLDER
+                                          )
+        print(task.backend.__dict__)
+        return {"task_id": task.id}
+
+    @app.get("/users/me/tasks/{task_id}", response_model=dict)
+    async def get_task_status(task_id: str):
+        task_result = AsyncResult(task_id)
+        result = {
+            "task_id": task_id,
+            "task_status": task_result.status,
+            "task_result": task_result.result
+        }
+        return result
 
     @app.post("/users/me/chatbot", response_model=dict[str, Any])
     async def chatbot(message: str,
@@ -109,3 +130,7 @@ def create_app() -> FastAPI:
         return chatbot.chat(query=message)
 
     return app
+
+
+
+

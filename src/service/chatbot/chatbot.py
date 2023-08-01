@@ -11,7 +11,7 @@ class Chatbot:
     vector_store: VectorStore = None
 
     @abstractmethod
-    def load_vector_store(self, persist_directory: str, docs_path: str = None) -> None:
+    def load_vector_store(self, persist_directory: str, docs_path: str = None, replace: bool = True) -> None:
         pass
 
     @abstractmethod

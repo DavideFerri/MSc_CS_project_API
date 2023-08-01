@@ -74,6 +74,7 @@ def test_upload_document_admin(client):
     assert response.status_code == 200
     assert response.json() == {"message": f"Document {upload_file.filename} successfully uploaded to S3!"}
 
+
 def test_upload_document_non_admin(client):
     # Simulate an authenticated user (you may need to create a valid UserModel instance)
     headers = get_auth_header(client, 'john')
